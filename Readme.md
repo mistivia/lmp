@@ -31,9 +31,7 @@ meta_fn(prime_sieve, class lst) {
     meta_return (Cons<Int<n>, tail>);
 };
 
-struct primes {
-    meta_return (prime_sieve<infinite_integers<2>>);
-};
+using primes = prime_sieve<infinite_integers<2>>;
 
 static_assert(nth<primes, 0>::value == 2);
 static_assert(nth<primes, 1>::value == 3);
