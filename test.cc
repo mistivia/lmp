@@ -1,221 +1,20 @@
-#include <type_traits>
-#include <cstdio>
+/**
+* Copyright (c) 2026 Mistivia <i@mistivia.com>
+ * 
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
 
-namespace lmp { // "lmp' is short for "Lispy Meta Programming"
-
-template<typename T>
-using force = typename T::type;
-
-// macros
-
-#define let_lazy(__name__, ...) \
-    struct __name__ { \
-        using type = typename __VA_ARGS__::type; \
-    };
-
-#define meta_fn(__name__, ...) template<__VA_ARGS__> struct __name__
-
-#define meta_return(...) using type = ::lmp::force<__VA_ARGS__>
-
-#define has_value static constexpr int value = type::value
-
-// data Constructor
-
-struct Nil { 
-    using type = Nil;
-};
-
-template<typename head, typename tail>
-struct Cons {
-    using car = head;
-    using cdr = tail;
-    using type = Cons<head, tail>;
-};
-
-// data accessor
-
-template<typename lst>
-using car = typename force<lst>::car;
-
-template<typename lst>
-using cdr = typename force<lst>::cdr;
-
-template<typename lst>
-using cadr = car<cdr<lst>>;
-
-// wrapper for integer
-
-template<int N>
-using Int = std::integral_constant<int, N>;
-
-// type function for comparing
-
-template<typename L, typename R>
-using eq = std::is_same<L, R>;
-
-template<typename T>
-using nilp = eq<T, Nil>;
-
-// cond
-
-template<typename condition, typename tb, typename fb>
-struct cond_impl;
-
-template<typename tb, typename fb>
-struct cond_impl<std::true_type, tb, fb> {
-  using type = force<tb>;
-};
-
-template<typename tb, typename fb>
-struct cond_impl<std::false_type, tb, fb> {
-  using type = force<fb>;
-};
-
-meta_fn(cond, class Cond, class tb, class fb) {
-    using condition = force<Cond>;
-    meta_return (cond_impl<condition, tb, fb>);
-};
-
-
-// basic arithmetics
-
-template<typename L, typename R>
-using equal = std::bool_constant<force<L>::value == force<R>::value>;
-
-template<typename L, typename R>
-using nequal = std::bool_constant<force<L>::value != force<R>::value>;
-
-template<typename L, typename R>
-using gt = std::bool_constant<(force<L>::value > force<R>::value)>;
-
-template<typename L, typename R>
-using ge = std::bool_constant<force<L>::value >= force<R>::value>;
-
-template<typename L, typename R>
-using lt = std::bool_constant<(force<L>::value < force<R>::value)>;
-
-template<typename L, typename R>
-using le = std::bool_constant<(force<L>::value <= force<R>::value)>;
-
-meta_fn(add2, class lhs, class rhs) {
-    meta_return (Int<(force<lhs>::value + force<rhs>::value)>);
-};
-
-template<typename T>
-using requires = typename std::enable_if<T::value>::type;
-
-meta_fn(add , class... args);
-    template<class arg, class... args>
-    struct add<arg, args...> {
-        meta_return (add2<arg, add<args...>>);
-    };
-    template<>
-    struct add<> {
-        meta_return (Int<0>);
-    };
-
-meta_fn(neg, class rhs) {
-    meta_return (Int<(- force<rhs>::value)>);
-};
-
-meta_fn(sub, class lhs, class rhs) {
-    meta_return (Int<(force<lhs>::value - force<rhs>::value)>);
-};
-
-meta_fn(mul2, class lhs, class rhs) {
-    meta_return (Int<(force<lhs>::value * force<rhs>::value)>);
-};
-
-meta_fn(mul , class... args);
-    template<class arg, class... args>
-    struct mul<arg, args...> {
-        meta_return (mul2<arg, add<args...>>);
-    };
-    template<>
-    struct mul<> {
-        meta_return (Int<1>);
-    };
-
-meta_fn(div, class lhs, class rhs) {
-    meta_return (Int<(force<lhs>::value / force<rhs>::value)>);
-};
-
-meta_fn(mod, class lhs, class rhs) {
-    meta_return (Int<(force<lhs>::value % force<rhs>::value)>);
-};
-
-// list primitives
-
-meta_fn(List , class... args);
-
-template<class arg, class... args>
-struct List<arg, args...> {
-    meta_return (Cons<arg, List<args...>>);
-};
-
-template<>
-struct List<> {
-    meta_return (Nil);
-};
-
-meta_fn(IntList, int... n) {
-    meta_return (List<Int<n>...>);
-};
-
-meta_fn(length, class Lst) {
-    using lst = force<Lst>;
-    let_lazy(cdr_length, length<cdr<lst>>);
-    meta_return (
-        cond<nilp<lst>,
-            Int<0>,
-            add<Int<1>, cdr_length>>);
-    has_value;
-};
-
-meta_fn(nth, class Lst, int N) {
-    using lst = force<Lst>;
-    let_lazy(next, nth<cdr<lst>, N-1>);
-    meta_return (
-        cond<equal<Int<N>, Int<0>>,
-            car<lst>,
-            next>);
-    has_value;
-};
-
-meta_fn(apply, template<class... args> class fn, class lst, typename = void);
-    template<
-        template<class... args> class fn,
-        class lst>
-    struct apply<fn, lst, requires<equal<Int<1>, length<lst>>>> {
-        meta_return (fn<nth<lst, 0>>);
-    };
-    template<
-        template<class... args> class fn,
-        class lst>
-    struct apply<fn, lst, requires<equal<Int<2>, length<lst>>>> {
-        meta_return (fn<nth<lst, 0>, nth<lst, 1>>);
-    };
-    template<
-        template<class... args> class fn,
-        class lst>
-    struct apply<fn, lst, requires<equal<Int<3>, length<lst>>>> {
-        meta_return (fn<nth<lst, 0>, nth<lst, 1>, nth<lst, 2>>);
-    };
-    template<
-        template<class... args> class fn,
-        class lst>
-    struct apply<fn, lst, requires<equal<Int<4>, length<lst>>>> {
-        meta_return (fn<nth<lst, 0>, nth<lst, 1>, nth<lst, 2>, nth<lst, 3>>);
-    };
-    template<
-        template<class... args> class fn,
-        class lst>
-    struct apply<fn, lst, requires<equal<Int<5>, length<lst>>>> {
-        meta_return (fn<nth<lst, 0>, nth<lst, 1>, nth<lst, 2>,
-                        nth<lst, 3>, nth<lst, 4>>);
-    };
-
-} // namespace lmp
+#include "lmp.h"
 
 using namespace lmp;
 
@@ -246,20 +45,33 @@ struct primes {
 
 // tests
 
+static_assert(eq<apply<List, IntList<1, 2, 3>>, IntList<1, 2, 3>>::value);
+
+using reversed_list = reverse<IntList<1, 2, 3>>;
+static_assert(length<reversed_list>::value == 3);
+static_assert(nth<reversed_list, 0>::value == 3);
+static_assert(nth<reversed_list, 1>::value == 2);
+static_assert(nth<reversed_list, 2>::value == 1);
+
+static_assert(not_<std::false_type>::value);
+static_assert(!not_<std::true_type>::value);
+
 using my_list = IntList<1,2,3>;
+static_assert(car<my_list>::value == 1);
+static_assert(cadr<my_list>::value == 2);
+static_assert(length<my_list>::value == 3);
+
+static_assert(nth<primes, 0>::value == 2);
+static_assert(nth<primes, 1>::value == 3);
+static_assert(nth<primes, 2>::value == 5);
+static_assert(nth<primes, 3>::value == 7);
+static_assert(nth<primes, 4>::value == 11);
+static_assert(nth<primes, 5>::value == 13);
+
+static_assert(add<Int<1>, Int<2>, Int<3>>::value == 6);
+static_assert(apply<add, IntList<1, 2, 3>>::type::value == 6);
+static_assert(apply<add, IntList<1, 2, 3, 4, 5, 6, 7, 8>>::type::value == 36);
 
 int main() {
-    std::printf("first: %d\n", car<my_list>::value);
-    std::printf("second: %d\n", cadr<my_list>::value);
-    std::printf("length: %d\n", length<my_list>::value);
-
-    std::printf("%d\n", nth<primes, 0>::value);
-    std::printf("%d\n", nth<primes, 1>::value);
-    std::printf("%d\n", nth<primes, 2>::value);
-    std::printf("%d\n", nth<primes, 3>::value);
-    std::printf("%d\n", nth<primes, 4>::value);
-    std::printf("%d\n", nth<primes, 5>::value);
-
-    std::printf("%d\n", add<Int<1>, Int<2>, Int<3>>::type::value);
-    std::printf("%d\n", apply<add, IntList<1, 2, 3>>::type::value);
+    return 0;
 }  
