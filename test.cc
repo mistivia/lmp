@@ -1,15 +1,25 @@
 #include <type_traits>
 #include <cstdio>
-struct nil {};
 
-template<typename A, typename D>
-struct cons { using car = A; using cdr = D; };
+struct nil { 
+    using type = nil;
+};
 
-template<typename L>
-using car  = typename L::car;
+template<typename head, typename tail>
+struct cons {
+    using car = head;
+    using cdr = tail;
+    using type = cons<head, tail>;
+};
 
-template<typename L>
-using cdr  = typename L::cdr;
+template<typename lst>
+using car = typename lst::car;
+
+template<typename lst>
+using cdr = typename lst::cdr;
+
+template<typename lst>
+using cadr = car<cdr<lst>>;
 
 template<int N>
 using cint = std::integral_constant<int, N>;
@@ -20,17 +30,20 @@ using eq = std::is_same<L, R>;
 template<typename T>
 struct delay { using type = T; };
 
+template<typename T>
+using force = typename T::type;
+
 template<bool B, typename tb, typename fb>
 struct cond;
 
 template<typename tb, typename fb>
 struct cond<true, tb, fb> {
-  using type = typename tb::type;
+  using type = force<tb>;
 };
 
 template<typename tb, typename fb>
 struct cond<false, tb, fb> {
-  using type = typename fb::type;
+  using type = force<fb>;
 };
 
 template<typename L>
@@ -38,25 +51,34 @@ struct length;
 
 template<typename lhs, typename rhs>
 struct add {
-  using type = cint<lhs::type::value + rhs::type::value>;
+    using lvalue = force<lhs>;
+    using rvalue = force<rhs>;
+    using type = cint<lvalue::value + rvalue::value>;
 };
 
-template<typename L>
+#define LET(__name__, __expr__) \
+    struct __name__ { \
+        using type = typename __expr__::type; \
+    }; \
+
+template<typename Lst>
 struct length {
-    struct cdr_length_thunk {
-        using type = typename length<cdr<L>>::type;
-    };
-    using type = typename cond<
-        eq<L, nil>::value,
-        delay<cint<0>>,
-        add<delay<cint<1>>, cdr_length_thunk>
-    >::type;
+    using lst = force<Lst>;
+
+    LET(cdr_length, length<cdr<lst>>);
+
+    using type = typename
+        cond<
+            eq<lst, nil>::value,
+            cint<0>,
+            add<cint<1>, cdr_length>>::type;
+
     static constexpr int value = type::value;
 };
-// test
+
 using my_list = cons<cint<1>, cons<cint<2>, nil>>;
 int main() {
   std::printf("first: %d\n", car<my_list>::value);
-  std::printf("second: %d\n", car<cdr<my_list>>::value);
+  std::printf("second: %d\n", cadr<my_list>::value);
   std::printf("length: %d\n", length<my_list>::value);
 }
