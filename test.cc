@@ -33,17 +33,23 @@ struct delay { using type = T; };
 template<typename T>
 using force = typename T::type;
 
-template<bool B, typename tb, typename fb>
-struct cond;
+template<typename condition, typename tb, typename fb>
+struct cond_impl;
 
 template<typename tb, typename fb>
-struct cond<true, tb, fb> {
+struct cond_impl<std::true_type, tb, fb> {
   using type = force<tb>;
 };
 
 template<typename tb, typename fb>
-struct cond<false, tb, fb> {
+struct cond_impl<std::false_type, tb, fb> {
   using type = force<fb>;
+};
+
+template<typename Cond, typename tb, typename fb>
+struct cond {
+    using condition = force<Cond>;
+    using type = typename cond_impl<condition, tb, fb>::type;
 };
 
 template<typename L>
@@ -69,7 +75,7 @@ struct length {
     let_lazy(cdr_length, length<cdr<lst>>);
     let_lazy(expr,
         cond<
-            eq<lst, nil>::value,
+            eq<lst, nil>,
             cint<0>,
             add<cint<1>, cdr_length>>);
 
