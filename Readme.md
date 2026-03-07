@@ -2,6 +2,8 @@
 
 C++ template meta programming in a Lisp style.
 
+C++17 is needed.
+
 See `test.cc` for examples.
 
 
