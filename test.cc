@@ -52,9 +52,6 @@ struct cond {
     using type = typename cond_impl<condition, tb, fb>::type;
 };
 
-template<typename L>
-struct length;
-
 template<typename lhs, typename rhs>
 struct add {
     using lvalue = force<lhs>;
@@ -69,7 +66,6 @@ struct add {
 
 template<typename Lst>
 struct length {
-    // length is a function, args must be evaluated first
     using lst = force<Lst>;
 
     let_lazy(cdr_length, length<cdr<lst>>);
