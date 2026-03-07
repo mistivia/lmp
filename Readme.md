@@ -13,6 +13,7 @@ See `test.cc` for examples.
 using namespace lmp;
 
 meta_fn(infinite_integers, int n) {
+    // `let_lazy(name, expr)` is similar to `(define name (delay expr))` in scheme
     let_lazy(next, infinite_integers<n + 1>);
     meta_return (Cons<Int<n>, next>);
 };
