@@ -12,7 +12,30 @@ See `test.cc` for examples.
 
 ## Example
 
-### 1. Sieve of Eratosthenes
+### 1. Basic List Operations
+
+```cpp
+using reversed_list = reverse<IntList<1, 2, 3>>;
+
+static_assert(length<reversed_list>::type::value == 3);
+
+static_assert(nth<reversed_list, 0>::type::value == 3);
+static_assert(nth<reversed_list, 1>::type::value == 2);
+static_assert(nth<reversed_list, 2>::type::value == 1);
+
+template<typename T>
+using add1 = force<add<Int<1>, force<T>>>;
+
+using mapped_list = map<add1, IntList<1, 2, 3>>;
+
+static_assert(length<mapped_list>::value == 3);
+
+static_assert(nth<mapped_list, 0>::type::value == 2);
+static_assert(nth<mapped_list, 1>::type::value == 3);
+static_assert(nth<mapped_list, 2>::type::value == 4);
+```
+
+### 2. Infinite List of Primes (Sieve of Eratosthenes)
 
 ```cpp
 #include <lmp.h>
@@ -70,10 +93,6 @@ Similar form in Scheme:
 (define primes
   (prime-sieve (infinite-integers 2)))
 ```
-
-### 2. Real meta programming
-
-TODO
 
 ## How This Works
 
