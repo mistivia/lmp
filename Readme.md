@@ -36,12 +36,12 @@ meta_fn(prime_sieve, class lst) {
 
 using primes = prime_sieve<infinite_integers<2>>;
 
-static_assert(nth<primes, 0>::value == 2);
-static_assert(nth<primes, 1>::value == 3);
-static_assert(nth<primes, 2>::value == 5);
-static_assert(nth<primes, 3>::value == 7);
-static_assert(nth<primes, 4>::value == 11);
-static_assert(nth<primes, 5>::value == 13);
+static_assert(nth<primes, 0>::type::value == 2);
+static_assert(nth<primes, 1>::type::value == 3);
+static_assert(nth<primes, 2>::type::value == 5);
+static_assert(nth<primes, 3>::type::value == 7);
+static_assert(nth<primes, 4>::type::value == 11);
+static_assert(nth<primes, 5>::type::value == 13);
 ```
 
 Similar form in Scheme:
