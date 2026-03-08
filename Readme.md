@@ -4,6 +4,8 @@ C++ template meta programming in a Lisp style.
 
 C++17 is needed.
 
+This is currently a demo just for proof of concept.
+
 See `test.cc` for examples.
 
 
