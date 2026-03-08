@@ -66,6 +66,13 @@ using cdr = typename force<lst>::cdr;
 
 template<typename lst>
 using cadr = car<cdr<lst>>;
+template<typename lst>
+using caar = car<car<lst>>;
+template<typename lst>
+using cdar = cdr<car<lst>>;
+template<typename lst>
+using cddr = cdr<cdr<lst>>;
+
 
 // wrapper for integer
 
@@ -103,6 +110,34 @@ meta_fn(cond, class Cond, class tb, class fb) {
     meta_return (cond_impl<condition, tb, fb>);
 };
 
+// logical primitive (with short-circuit)
+
+meta_fn(and_, class... Bs);
+    template<>
+    struct and_<> {
+        meta_return (std::true_type);
+        has_value;
+    };
+    template<class B, class... Bs>
+    struct and_<B, Bs...> {
+        let_lazy(rest, and_<Bs...>);
+        meta_return (cond<B, rest, std::false_type>);
+        has_value;
+    };
+
+meta_fn(or_, class... Bs);
+    template<>
+    struct or_<> {
+        meta_return (std::false_type);
+        has_value;
+    };
+    template<class B, class... Bs>
+    struct or_<B, Bs...> {
+        let_lazy(rest, or_<Bs...>);
+        meta_return (cond<B, std::true_type, rest>);
+        has_value;
+    };
+
 
 // basic arithmetics
 
@@ -135,22 +170,22 @@ meta_fn(add , class... args);
     template<class arg, class... args>
     struct add<arg, args...> {
         meta_return (add2<arg, add<args...>>);
-        static constexpr auto value = type::value;
+        has_value;
     };
     template<>
     struct add<> {
         meta_return (Int<0>);
-        static constexpr auto value = type::value;
+        has_value;
     };
 
 meta_fn(neg, class rhs) {
     meta_return (Int<(- force<rhs>::value)>);
-    static constexpr auto value = type::value;
+    has_value;
 };
 
 meta_fn(sub, class lhs, class rhs) {
     meta_return (Int<(force<lhs>::value - force<rhs>::value)>);
-    static constexpr auto value = type::value;
+    has_value;
 };
 
 meta_fn(mul2, class lhs, class rhs) {
@@ -161,22 +196,22 @@ meta_fn(mul , class... args);
     template<class arg, class... args>
     struct mul<arg, args...> {
         meta_return (mul2<arg, add<args...>>);
-        static constexpr auto value = type::value;
+        has_value;
     };
     template<>
     struct mul<> {
         meta_return (Int<1>);
-        static constexpr auto value = type::value;
+        has_value;
     };
 
 meta_fn(div, class lhs, class rhs) {
     meta_return (Int<(force<lhs>::value / force<rhs>::value)>);
-    static constexpr auto value = type::value;
+    has_value;
 };
 
 meta_fn(mod, class lhs, class rhs) {
     meta_return (Int<(force<lhs>::value % force<rhs>::value)>);
-    static constexpr auto value = type::value;
+    has_value;
 };
 
 // list primitives
@@ -204,7 +239,7 @@ meta_fn(length, class Lst) {
         cond<nilp<lst>,
             Int<0>,
             add<Int<1>, cdr_length>>);
-    static constexpr auto value = type::value;
+    has_value;
 };
 
 meta_fn(nth, class Lst, int N) {

@@ -54,6 +54,19 @@ static_assert(nth<reversed_list, 2>::type::value == 1);
 static_assert(not_<std::false_type>::value);
 static_assert(!not_<std::true_type>::value);
 
+static_assert(and_<>::value);
+static_assert(and_<std::true_type, std::true_type>::value);
+static_assert(!and_<std::true_type, std::false_type>::value);
+
+static_assert(!or_<>::value);
+static_assert(or_<std::false_type, std::true_type>::value);
+static_assert(!or_<std::false_type, std::false_type>::value);
+
+// short-circuit checks: second argument must not be instantiated
+struct should_not_be_forced;
+static_assert(!and_<std::false_type, should_not_be_forced>::value);
+static_assert(or_<std::true_type, should_not_be_forced>::value);
+
 using my_list = int_list<1,2,3>;
 static_assert(car<my_list>::value == 1);
 static_assert(cadr<my_list>::value == 2);
