@@ -67,6 +67,29 @@ struct should_not_be_forced;
 static_assert(!and_<std::false_type, should_not_be_forced>::value);
 static_assert(or_<std::true_type, should_not_be_forced>::value);
 
+// case_ checks
+static_assert(
+    case_<std::true_type, Int<1>,
+          Int<2>>
+    ::type::value == 1);
+static_assert(
+    case_<std::false_type, Int<1>,
+          std::true_type, Int<2>,
+          Int<3>>
+    ::type::value == 2);
+static_assert(
+    case_<std::false_type, Int<1>,
+          std::false_type, Int<2>,
+          Int<3>>
+    ::type::value == 3);
+
+// case_ short-circuit: later predicate must not be instantiated if already matched
+static_assert(
+    case_<std::true_type, std::true_type,
+          should_not_be_forced, std::false_type,
+          std::false_type>\
+    ::type::value);
+
 using my_list = IntList<1,2,3>;
 static_assert(car<my_list>::value == 1);
 static_assert(cadr<my_list>::value == 2);
@@ -78,6 +101,14 @@ static_assert(nth<appended_list, 0>::type::value == 1);
 static_assert(nth<appended_list, 1>::type::value == 2);
 static_assert(nth<appended_list, 2>::type::value == 3);
 static_assert(nth<appended_list, 3>::type::value == 4);
+
+using range_list = range<5, 10>;
+static_assert(length<range_list>::value == 5);
+static_assert(nth<range_list, 0>::type::value == 5);
+static_assert(nth<range_list, 1>::type::value == 6);
+static_assert(nth<range_list, 2>::type::value == 7);
+static_assert(nth<range_list, 3>::type::value == 8);
+static_assert(nth<range_list, 4>::type::value == 9);
 
 static_assert(memberp<Int<1>, my_list>::value);
 static_assert(memberp<Int<2>, my_list>::value);

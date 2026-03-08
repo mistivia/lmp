@@ -109,6 +109,18 @@ meta_fn(cond, class Cond, class tb, class fb) {
     meta_return (cond_impl<condition, tb, fb>);
 };
 
+// case: case_<pred1, expr1, pred2, expr2, ..., default_expr>
+meta_fn(case_, class... Args);
+    template<class default_expr>
+    struct case_<default_expr> {
+        meta_return (default_expr);
+    };
+    template<class pred, class expr, class... rest>
+    struct case_<pred, expr, rest...> {
+        let_lazy(next, case_<rest...>);
+        meta_return (cond<pred, expr, next>);
+    };
+
 // logical primitive (with short-circuit)
 
 meta_fn(and_, class... Bs);
@@ -267,6 +279,16 @@ meta_fn(append, class Lst, class Elem) {
     using elem = force<Elem>;
     meta_return (
         reverse<cons<elem, reverse<lst>>>);
+};
+
+meta_fn(range, int start, int end) {
+    meta_fn(range_impl, int cur, class lst) {
+        meta_return (
+            cond<eq<Int<cur>, Int<end>>,
+                lst,
+                range_impl<(cur+1), append<lst, Int<cur>>>>);
+    };
+    meta_return(range_impl<start, nil>);
 };
 
 meta_fn(memberp, class Item, class Lst) {
