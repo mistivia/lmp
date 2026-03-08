@@ -4,12 +4,15 @@ C++ template meta programming in a Lisp style.
 
 C++17 is needed.
 
-This is currently a demo just for proof of concept.
+This is not something you would use in production. It's more like treating C++ 
+template as an esolang, and create a "Lisp" on it just for fun.
 
 See `test.cc` for examples.
 
 
-## Example: Sieve of Eratosthenes
+## Example
+
+### 1. Sieve of Eratosthenes
 
 ```cpp
 #include <lmp.h>
@@ -68,9 +71,13 @@ Similar form in Scheme:
   (prime-sieve (infinite-integers 2)))
 ```
 
+### 2. Real meta programming
+
+TODO
+
 ## How This Works
 
-This chapter explains the core idea behind LMP: bring lazy evaluation (“thunks”) into C++ template metaprogramming, so we can write branching (`if/cond`) and short-circuit logic (`and/or/case`) without resorting to heavy SFINAE boilerplate.
+This chapter explains the core idea behind LMP: bring lazy evaluation ("thunks") into C++ template metaprogramming, so we can write branching (`if/cond`) and short-circuit logic (`and/or/case`) without resorting to heavy SFINAE boilerplate.
 
 ### Templates feel like function calls, it's eager.
 
@@ -88,7 +95,7 @@ The problem is that template metaprogramming is effectively eager: if you write 
 myif<Cond, TrueBranch, FalseBranch>
 ```
 
-you might expect it to only instantiate/evaluate the chosen branch. But in practice, both `TrueBranch` and `FalseBranch` get instantiated while forming the types—so you can’t reliably use “function call style” to implement branching.
+you might expect it to only instantiate/evaluate the chosen branch. But in practice, both `TrueBranch` and `FalseBranch` get instantiated while forming the types—so you can't reliably use "function call style" to implement branching.
 
 The classic workaround is SFINAE / `enable_if` / partial specialization dispatch. It works, but it tends to add lots of boilerplate, obscure the actual logic, and make code harder to read.
 
@@ -96,7 +103,7 @@ The classic workaround is SFINAE / `enable_if` / partial specialization dispatch
 
 If we can wrap an expression in a type that does not evaluate it immediately, we can pass branches around safely and only evaluate the one we select.
 
-A minimal “thunk” looks like this:
+A minimal "thunk" looks like this:
 
 ```cpp
 struct thunk_name {
@@ -110,7 +117,7 @@ struct thunk_name {
 ```cpp
 #define let_lazy(__name__, ...) \
     struct __name__ { \
-        using type = typename __VA_ARGS__::type; \
+        using type = ::lmp::force<__VA_ARGS__>; \
     };
 ```
 
@@ -125,15 +132,26 @@ Now `do_a_thunk` / `do_b_thunk` are lazy expressions.
 
 ### `force`: evaluate a thunk (or any meta-object with `::type`)
 
-To evaluate something in LMP, you use `force`:
+To evaluate something in LMP, you use `force`.
+
+- If `T` is a thunk, `force<T>` evaluates the thunk, which using the `::type` concention:
+
 
 ```cpp
 template<typename T>
-using force = typename T::type;
+struct force_impl<T, std::void_t<typename T::type>> {
+    using type = typename T::type;
+};
 ```
 
-- If `T` is a thunk, `force<T>` evaluates the thunk.
-- If `T` is any meta-object that follows the convention "result is in `::type`", `force<T>` retrieves that result.
+If `T` is not a thunk, `force<T>` returns itself:
+
+```cpp
+template<typename T, typename = void>
+struct force_impl {
+    using type = T;
+};
+```
 
 This is a convention in LMP:
 
@@ -159,7 +177,7 @@ let_lazy(do_b_thunk, do_b<x>);
 using result = lmp::force< lmp::cond<ok, do_a_thunk, do_b_thunk> >;
 ```
 
-This is still a bit more verbose than a real functional language, but it’s predictable, composable, and avoids SFINAE-heavy branching patterns.
+This is still a bit more verbose than a real functional language, but it's predictable, composable, and avoids SFINAE-heavy branching patterns.
 
 Short-circuit logic (`and_`, `or_`, `case_`) is built the same way. Once you have a conditional that only evaluates one branch, you can implement short-circuiting constructs naturally:
 
@@ -167,7 +185,7 @@ Short-circuit logic (`and_`, `or_`, `case_`) is built the same way. Once you hav
 - `and_` evaluates left-to-right and stops at the first false condition
 - `case_` chains `(predicate, expression)` pairs and picks the first matching one
 
-All of them rely on the same mechanism: recursive structure + thunks + `cond` so that the “rest of the computation” is delayed and only forced when needed.
+All of them rely on the same mechanism: recursive structure + thunks + `cond` so that the "rest of the computation" is delayed and only forced when needed.
 
 ### The meta-function pattern: force inputs, and force the returned expression
 
@@ -210,31 +228,3 @@ template<typename T>
 using add1 = force<add<Int<1>, force<T>>>;
 ```
 
-### Data types also follow the `::type` convention
-
-LMP has “meta-functions”, but it also has "meta-data structures" (e.g., Lisp-like lists). For data, a crucial rule is:
-
-> A data object's `::type` should be itself, so `force<Data>` yields the same structure.
-
-For example:
-
-```cpp
-struct nil { using type = nil; };
-
-template<typename head, typename tail>
-struct cons {
-    using car = head;
-    using cdr = tail;
-    using type = cons<head, tail>;
-};
-```
-
-This lets you write accessors that work whether the input is a thunk or already-evaluated data:
-
-```cpp
-template<typename lst>
-using car = typename lmp::force<lst>::car;
-
-template<typename lst>
-using cdr = typename lmp::force<lst>::cdr;
-```

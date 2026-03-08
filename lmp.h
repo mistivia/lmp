@@ -20,14 +20,25 @@
 
 namespace lmp {
 
+template<typename T, typename = void>
+struct force_impl {
+    using type = T;
+};
+
 template<typename T>
-using force = typename T::type;
+struct force_impl<T, std::void_t<typename T::type>> {
+    using type = typename T::type;
+};
+
+
+template<typename T>
+using force = typename force_impl<T>::type;
 
 // macros
 
 #define let_lazy(__name__, ...) \
     struct __name__ { \
-        using type = typename __VA_ARGS__::type; \
+        using type = ::lmp::force<__VA_ARGS__>; \
     };
 
 #define meta_fn(__name__, ...) template<__VA_ARGS__> struct __name__
@@ -38,13 +49,12 @@ using force = typename T::type;
 
 // data constructor
 
-struct nil { using type = nil; };
+struct nil { };
 
 template<typename head, typename tail>
 struct cons {
     using car = head;
     using cdr = tail;
-    using type = cons<head, tail>;
 };
 
 // data accessor
@@ -76,6 +86,36 @@ using eq = std::is_same<force<L>, force<R>>;
 
 template<typename T>
 using nilp = eq<force<T>, nil>;
+
+template<typename T>
+struct intp_impl : std::false_type { };
+
+template<int N>
+struct intp_impl<Int<N>> : std::true_type { };
+
+template<typename T>
+using intp = intp_impl<force<T>>;
+
+template<typename T>
+struct pairp_impl : std::false_type { };
+
+template<typename H, typename Tail>
+struct pairp_impl<cons<H, Tail>> : std::true_type { };
+
+template<typename T>
+using pairp = pairp_impl<force<T>>;
+
+template<typename T>
+struct listp_impl : std::false_type { };
+
+template<>
+struct listp_impl<nil> : std::true_type { };
+
+template<typename H, typename Tail>
+struct listp_impl<cons<H, Tail>> : listp_impl<force<Tail>> { };
+
+template<typename T>
+using listp = listp_impl<force<T>>;
 
 template<typename B>
 using not_ = std::bool_constant<!force<B>::value>;
@@ -143,11 +183,16 @@ meta_fn(or_, class... Bs);
 
 // basic arithmetics
 
-template<typename L, typename R>
-using equal = std::bool_constant<force<L>::value == force<R>::value>;
-
-template<typename L, typename R>
-using nequal = std::bool_constant<force<L>::value != force<R>::value>;
+meta_fn(equal, class L, class R) {
+    using l = force<L>;
+    using r = force<R>;
+    let_lazy(pair_eq, and_<equal<car<l>, car<r>>, equal<cdr<l>, cdr<r>>>);
+    meta_return (
+        case_<and_<pairp<l>, pairp<r>>,
+              pair_eq,
+              eq<l, r>>);
+    has_value;
+};
 
 template<typename L, typename R>
 using gt = std::bool_constant<(force<L>::value > force<R>::value)>;
@@ -299,7 +344,7 @@ meta_fn(memberp, class Item, class Lst) {
 
 meta_fn(map, template<class> class fn, class Lst) {
     using lst = force<Lst>;
-    let_lazy(new_lst,cons<fn<car<lst>>, map<fn, cdr<lst>>>);
+    let_lazy(new_lst, cons<fn<car<lst>>, map<fn, cdr<lst>>>);
     meta_return (
         cond<nilp<lst>,
             nil,

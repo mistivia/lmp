@@ -45,6 +45,8 @@ using primes = prime_sieve<infinite_integers<2>>;
 
 // tests
 
+static_assert(car<cons<Int<1>, Int<2>>>::type::value == 1);
+
 static_assert(eq<apply<list, IntList<1, 2, 3>>, IntList<1, 2, 3>>::value);
 
 using reversed_list = reverse<IntList<1, 2, 3>>;
