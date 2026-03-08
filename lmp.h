@@ -324,4 +324,23 @@ meta_fn(apply, template<class... args> class fn, class lst) {
     meta_return (apply_impl<fn, lst>);
 };
 
+// string utils
+
+meta_fn(char_at, const char* str, int n) {
+    meta_return (Int<(int)str[n]>);
+};
+
+constexpr int string_len(const char* s) {
+    int n = 0;
+    while (s[n] != '\0') ++n;
+    return n;
+}
+
+meta_fn(string_to_list, const char *str) {
+    using idx_lst= range<0, string_len(str)>;
+    template<class Elem>
+    using at = char_at<str, force<Elem>::value>;
+    meta_return (map<at, idx_lst>);
+};
+
 } // namespace lmp

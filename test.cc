@@ -95,6 +95,18 @@ static_assert(
           std::false_type>\
     ::type::value);
 
+inline constexpr char hello_str[] = "hello";
+static_assert(char_at<hello_str, 0>::type::value == 'h');
+static_assert(char_at<hello_str, 1>::type::value == 'e');
+static_assert(char_at<hello_str, 4>::type::value == 'o');
+static_assert(char_at<hello_str, 5>::type::value == '\0');
+
+using hello_str_lst = string_to_list<hello_str>;
+
+static_assert(nth<hello_str_lst, 0>::type::value == (int)'h');
+static_assert(nth<hello_str_lst, 1>::type::value == (int)'e');
+static_assert(nth<hello_str_lst, 4>::type::value == (int)'o');
+
 using my_list = IntList<1,2,3>;
 static_assert(car<my_list>::value == 1);
 static_assert(cadr<my_list>::value == 2);
