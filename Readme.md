@@ -110,6 +110,36 @@ primes = filterPrime [2..] where
     p : filterPrime [x | x <- xs, x `mod` p /= 0]
 ```
 
+## C++20 Concepts
+
+if you are using C++20, in this setting, `concept` becomes "type checking".
+
+For exmaple, we have a meta function `intp` checking if a meta value value is an integer. So we define a concept `Integer`:
+
+```cpp
+template<typename T>
+concept Integer = intp<T>::value;
+```
+
+And then we can type checking our meta functions:
+
+```cpp
+meta_fn(myadd, Integer A, Integer B)
+{
+    using a = force<A>;
+    using b = force<B>;
+    meta_return (add<a, b>);
+    has_value;
+};
+
+// success
+using x = myadd<Int<1>, Int<2>>;
+
+// error: template constraint failure for ‘template<class A, class B> 
+// requires (Integer<A>) && (Integer<B>) struct myfn’
+using y = myadd<Int<1>, nil>;
+```
+
 ## How This Works
 
 This chapter explains the core idea behind LMP: bring lazy evaluation ("thunks") into C++ template metaprogramming, so we can write branching (`if/cond`) and short-circuit logic (`and/or/case`) without resorting to heavy SFINAE boilerplate.
