@@ -25,7 +25,8 @@ meta_fn(infinite_integers, int n) {
     meta_return (cons<Int<n>, next>);
 };
 
-meta_fn(filter_mod, class lst, int n) {
+meta_fn(filter_mod, class Lst, int n) {
+    using lst = force<Lst>;
     let_lazy(tail, filter_mod<cdr<lst>, n>);
     meta_return (
         cond<equal<mod<car<lst>, Int<n>>, Int<0>>,
@@ -33,7 +34,8 @@ meta_fn(filter_mod, class lst, int n) {
             cons<car<lst>, tail>>);
 };
 
-meta_fn(prime_sieve, class lst) {
+meta_fn(prime_sieve, class Lst) {
+    using lst = force<Lst>;
     static constexpr int n = car<lst>::value;
     let_lazy(tail, prime_sieve<filter_mod<cdr<lst>, n>>);
     meta_return (cons<Int<n>, tail>);

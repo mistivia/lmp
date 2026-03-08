@@ -50,10 +50,10 @@ struct cons {
 // data accessor
 
 template<typename lst>
-using car = typename force<lst>::car;
+using car = force<typename force<lst>::car>;
 
 template<typename lst>
-using cdr = typename force<lst>::cdr;
+using cdr = force<typename force<lst>::cdr>;
 
 template<typename lst>
 using cadr = car<cdr<lst>>;
@@ -75,7 +75,7 @@ template<typename L, typename R>
 using eq = std::is_same<force<L>, force<R>>;
 
 template<typename T>
-using nilp = eq<T, nil>;
+using nilp = eq<force<T>, nil>;
 
 template<typename B>
 using not_ = std::bool_constant<!force<B>::value>;

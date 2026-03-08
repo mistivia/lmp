@@ -203,6 +203,13 @@ meta_fn(my_meta_func, class Arg) {
 };
 ```
 
+You need to follow the same convention when defining new meta-functions with `using`. For example, to create a function which add one to an integer:
+
+```cpp
+template<typename T>
+using add1 = force<add<Int<1>, force<T>>>;
+```
+
 ### Data types also follow the `::type` convention
 
 LMP has “meta-functions”, but it also has "meta-data structures" (e.g., Lisp-like lists). For data, a crucial rule is:
