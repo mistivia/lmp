@@ -15,6 +15,10 @@ See `test.cc` for examples.
 ### 1. Basic List Operations
 
 ```cpp
+#include <lmp.h>
+
+using namespace lmp;
+
 using reversed_list = reverse<IntList<1, 2, 3>>;
 
 static_assert(length<reversed_list>::type::value == 3);
@@ -39,6 +43,9 @@ using is_even = equal<mod<T, Int<2>>, Int<0>>;
 
 using even_numbers = filter<is_even, IntList<1, 2, 3, 4, 5, 6>>;
 static_assert(equal<even_numbers, IntList<2, 4, 6>>::value);
+
+using sum_list = IntList<1, 2, 3, 4, 5, 6, 7, 8>;
+static_assert(apply<add,sum_list>::type::value == 36);
 ```
 
 

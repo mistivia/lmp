@@ -202,7 +202,9 @@ static_assert(nth<primes, 5>::type::value == 13);
 
 static_assert(add<Int<1>, Int<2>, Int<3>>::value == 6);
 static_assert(apply<add, IntList<1, 2, 3>>::type::value == 6);
-static_assert(apply<add, IntList<1, 2, 3, 4, 5, 6, 7, 8>>::type::value == 36);
+
+using sum_list = IntList<1, 2, 3, 4, 5, 6, 7, 8>;
+static_assert(apply<add,sum_list>::type::value == 36);
 
 int main() {
     return 0;
