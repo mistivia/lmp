@@ -45,6 +45,26 @@ void setImpl(ReflexObjectImpl<args...> &obj, T&& new_value) {
 }
 
 template<typename... args>
+void printImpl(ReflexObjectImpl<args...> &obj) {
+    using lst = typename lmp::list<args...>::type;
+    if constexpr (lmp::length<lst>::value >= 2) {
+        using N = typename lmp::nth<lst, 0>::type;
+        using T = typename lmp::nth<lst, 1>::type;
+        if constexpr (lmp::eq<T, int>::value) {
+            printf("%s: %d\n", lmp::list2string<N>::type::value, obj.value);
+        } else if constexpr (lmp::eq<T, double>::value) {
+            printf("%s: %lf\n", lmp::list2string<N>::type::value, obj.value);
+        } else if constexpr (lmp::eq<T, std::string>::value) {
+            printf("%s: %s\n", lmp::list2string<N>::type::value, obj.value.c_str());
+        }
+        using BaseType = typename lmp::apply<ReflexObjectImpl, lmp::cddr<lst>>::type;
+        printImpl(static_cast<BaseType&>(obj));
+    } else {
+        return;
+    }
+}
+
+template<typename... args>
 struct ReflexObject {
     ReflexObjectImpl<args...> value;
     template<typename N>
@@ -52,6 +72,9 @@ struct ReflexObject {
     template<typename N>
     value_type<N> get() {
         return getImpl<N, value_type<N>, args...>(value);
+    }
+    void print() {
+        printImpl(value);
     }
     template<typename N>
     void set(value_type<N> &&new_value) {
@@ -74,8 +97,6 @@ int main (){
     x.set<age>(1);
     x.set<height>(3.1415926);
     x.set<name>("hello");
-    printf("%s: %d\n", lmp::list2string<age>::type::value, x.get<age>());
-    printf("%s: %lf\n", lmp::list2string<height>::type::value, x.get<height>());
-    printf("%s: %s\n", lmp::list2string<name>::type::value, x.get<name>().c_str());
+    x.print();
     return 0;
 }
