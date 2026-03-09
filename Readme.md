@@ -2,7 +2,7 @@
 
 C++ template meta programming in a Lisp style.
 
-C++14 is needed.
+C++11 is needed.
 
 This is not something you would use in production. It's more like treating C++ 
 template as an esolang, and create a "Lisp" on it just for fun.

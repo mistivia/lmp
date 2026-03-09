@@ -399,9 +399,7 @@ meta_fn(char_at, const char* str, int n) {
 };
 
 constexpr int string_len(const char* s) {
-    int n = 0;
-    while (s[n] != '\0') ++n;
-    return n;
+    return *s ? 1 + string_len(s + 1) : 0;
 }
 
 meta_fn(string_to_list, const char *str) {
