@@ -202,7 +202,7 @@ template<>
 struct ReflexObjectImpl<> {};
 
 #define DEFINE_LITERAL(_name_)  \
-    namespace strlit { \
+    namespace { \
         inline static constexpr char _name_##_lit[] = #_name_; \
         using _name_ = typename lmp::string2list<_name_##_lit>::type; \
     } \
@@ -246,25 +246,24 @@ struct ReflexObject {
     }
 };
 
-DEFINE_LITERAL(name1)
-DEFINE_LITERAL(name2)
-DEFINE_LITERAL(name3)
-DEFINE_LITERAL(name4)
+DEFINE_LITERAL(age)
+DEFINE_LITERAL(height)
+DEFINE_LITERAL(name)
 
 using mytype = ReflexObject<
-    strlit::name1, int,
-    strlit::name2, double,
-    strlit::name3, std::string
+    age, int,
+    height, double,
+    name, std::string
 >;
 
 int main (){
     mytype x;
-    x.set<strlit::name1>(1);
-    x.set<strlit::name2>(3.1415926);
-    x.set<strlit::name3>("hello");
-    printf("%s: %d\n", lmp::list2string<strlit::name1>::type::value, x.get<strlit::name1>());
-    printf("%s: %lf\n", lmp::list2string<strlit::name2>::type::value, x.get<strlit::name2>());
-    printf("%s: %s\n", lmp::list2string<strlit::name3>::type::value, x.get<strlit::name3>().c_str());
+    x.set<age>(1);
+    x.set<height>(3.1415926);
+    x.set<name>("hello");
+    printf("%s: %d\n", lmp::list2string<age>::type::value, x.get<age>());
+    printf("%s: %lf\n", lmp::list2string<height>::type::value, x.get<height>());
+    printf("%s: %s\n", lmp::list2string<name>::type::value, x.get<name>().c_str());
     return 0;
 }
 ```
