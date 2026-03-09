@@ -130,21 +130,21 @@ using not_ = bool_constant<!force<B>::value>;
 // cond
 
 template<typename condition, typename tb, typename fb>
-struct cond_impl;
+struct if_impl;
 
 template<typename tb, typename fb>
-struct cond_impl<std::true_type, tb, fb> {
+struct if_impl<std::true_type, tb, fb> {
   using type = force<tb>;
 };
 
 template<typename tb, typename fb>
-struct cond_impl<std::false_type, tb, fb> {
+struct if_impl<std::false_type, tb, fb> {
   using type = force<fb>;
 };
 
-meta_fn(cond_, class Cond, class tb, class fb) {
+meta_fn(if_, class Cond, class tb, class fb) {
     using condition = force<Cond>;
-    meta_return (cond_impl<condition, tb, fb>);
+    meta_return (if_impl<condition, tb, fb>);
 };
 
 // cond<pred1, expr1, pred2, expr2, ..., default_expr>
@@ -156,7 +156,7 @@ meta_fn(cond, class... Args);
     template<class pred, class expr, class... rest>
     struct cond<pred, expr, rest...> {
         let_lazy(next, cond<rest...>);
-        meta_return (cond_<pred, expr, next>);
+        meta_return (if_<pred, expr, next>);
     };
 
 // logical primitive (with short-circuit)
@@ -170,7 +170,7 @@ meta_fn(and_, class... Bs);
     template<class B, class... Bs>
     struct and_<B, Bs...> {
         let_lazy(rest, and_<Bs...>);
-        meta_return (cond_<B, rest, std::false_type>);
+        meta_return (if_<B, rest, std::false_type>);
         has_value;
     };
 
@@ -183,7 +183,7 @@ meta_fn(or_, class... Bs);
     template<class B, class... Bs>
     struct or_<B, Bs...> {
         let_lazy(rest, or_<Bs...>);
-        meta_return (cond_<B, std::true_type, rest>);
+        meta_return (if_<B, std::true_type, rest>);
         has_value;
     };
 

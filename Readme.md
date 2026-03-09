@@ -199,7 +199,8 @@ Now `do_a_thunk` / `do_b_thunk` are lazy expressions.
 
 To evaluate something in LMP, you use `force`.
 
-- If `T` is a thunk, `force<T>` evaluates the thunk, which using the `::type` concention:
+- If `T` is a thunk, `force<T>` evaluates the thunk, which using the
+  `::type` convention:
 
 
 ```cpp
@@ -224,14 +225,14 @@ This is a convention in LMP:
 2. You call `force<>` when you want the evaluated result
 
 
-### Branching with `cond_`: only evaluate the selected branch
+### Branching with `if_`: only evaluate the selected branch
 
 With thunks, we can implement a real conditional branching that only evaluates one branch.
 
-Conceptually, `cond_<Cond, TB, FB>` does:
+Conceptually, `if_<Cond, TB, FB>` does:
 
 1. `force<Cond>` to get a boolean type (`std::true_type` / `std::false_type`)
-2. based on that, it forces only `TB` or `FB`
+2. based on that, it forces one of `TB` or `FB`
 
 So we define both branch as a thunk:
 
@@ -239,18 +240,24 @@ So we define both branch as a thunk:
 let_lazy(do_a_thunk, do_a<x>);
 let_lazy(do_b_thunk, do_b<x>);
 
-using result = lmp::force< lmp::cond_<ok, do_a_thunk, do_b_thunk> >;
+using result = lmp::force< lmp::if_<ok, do_a_thunk, do_b_thunk> >;
 ```
 
-This is still a bit more verbose than a real functional language, but it's predictable, composable, and avoids SFINAE-heavy branching patterns.
+This is still a bit more verbose than a real functional language, but
+it's predictable, composable, and avoids SFINAE-heavy branching
+patterns.
 
-Short-circuit logic (`and_`, `or_`, `cond`) is built the same way. Once you have a conditional that only evaluates one branch, you can implement short-circuiting constructs naturally:
+All other syntax involving hort-circuit logic (`and_`, `or_`, `cond`)
+is built the same way. Once you have a conditional that only evaluates
+one branch, you can implement short-circuiting constructs naturally:
 
 - `or_` evaluates left-to-right and stops at the first true condition
 - `and_` evaluates left-to-right and stops at the first false condition
 - `cond` chains `(predicate, expression)` pairs and picks the first matching one
 
-All of them rely on the same mechanism: recursive structure + thunks + `cond_` so that the "rest of the computation" is delayed and only forced when needed.
+All of them rely on the same mechanism: recursive structure + thunks +
+`cond_` so that the "rest of the computation" is delayed and only
+forced when needed.
 
 ### The meta-function pattern: force inputs, and force the returned expression
 
@@ -286,7 +293,9 @@ meta_fn(my_meta_func, class Arg) {
 };
 ```
 
-You need to follow the same convention when defining new meta-functions with `using`. For example, to create a function which add one to an integer:
+You need to follow the same convention when defining new
+meta-functions with `using`. For example, to create a function which
+add one to an integer:
 
 ```cpp
 template<typename T>
