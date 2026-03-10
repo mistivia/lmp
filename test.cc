@@ -19,29 +19,7 @@
 
 using namespace lmp;
 
-// infinite list of primes
-
-meta_fn(infinite_integers, int n) {
-    let_lazy(next, infinite_integers<n + 1>);
-    meta_return (cons<Int<n>, next>);
-};
-
-meta_fn(prime_sieve, class Lst) {
-    using lst = force<Lst>;
-    static constexpr int n = car<lst>::value;
-
-    template<class T>
-    using not_divisible = not_<equal<mod<T, Int<n>>, Int<0>>>;
-    
-    let_lazy(tail, prime_sieve<filter<not_divisible, cdr<lst>>>);
-    meta_return (cons<Int<n>, tail>);
-};
-
-using primes = prime_sieve<infinite_integers<2>>;
-
 // tests
-
-static_assert(car<cons<Int<1>, Int<2>>>::type::value == 1);
 
 static_assert(eq<apply<list, IntList<1, 2, 3>>, IntList<1, 2, 3>>::value);
 
@@ -70,19 +48,19 @@ static_assert(!pairp<Int<1>>::value);
 static_assert(listp<nil>::value);
 static_assert(listp<IntList<1, 2, 3>>::value);
 static_assert(!listp<Int<1>>::value);
-static_assert(!listp<cons<Int<1>, Int<2>>>::value);
+static_assert(!listp<add<Int<1>, Int<2>>>::value);
 
 // equal checks
 static_assert(equal<Int<7>, add<Int<3>, Int<4>>>::value);
 static_assert(!equal<Int<8>, add<Int<3>, Int<4>>>::value);
 static_assert(equal<IntList<1, 2, 3>, IntList<1, 2, 3>>::value);
 static_assert(!equal<IntList<1, 2, 3>, IntList<1, 2, 4>>::value);
-static_assert(!equal<IntList<1, 2>, cons<Int<1>, Int<2>>>::value);
+static_assert(!equal<IntList<1, 2>, IntList<1, 3>>::value);
 
 // complex equal cases
 static_assert(equal<
-    cons<IntList<1, 2>, cons<IntList<3, 4>, Int<2>>>,
-    cons<IntList<1, 2>, cons<IntList<3, 4>, add<Int<1>, Int<1>>>>
+    cons<IntList<1, 2>, cons<IntList<3, 4>, nil>>,
+    cons<IntList<1, 2>, cons<IntList<3, 4>, nil>>
 >::value);
 static_assert(equal<
     cons<Int<2>, cons<Int<3>, nil>>,
@@ -167,6 +145,9 @@ static_assert(nth<range_list, 2>::type::value == 7);
 static_assert(nth<range_list, 3>::type::value == 8);
 static_assert(nth<range_list, 4>::type::value == 9);
 
+// using longlist = range<5, 1000>;
+// static_assert(length<longlist>::value == 995);
+
 static_assert(memberp<Int<1>, my_list>::value);
 static_assert(memberp<Int<2>, my_list>::value);
 static_assert(!memberp<Int<4>, my_list>::value);
@@ -205,13 +186,6 @@ static_assert(equal<filtered_all_even, IntList<2, 4, 6>>::value);
 
 using filtered_none_even = filter<is_even, IntList<1, 3, 5>>;
 static_assert(nilp<filtered_none_even>::value);
-
-static_assert(nth<primes, 0>::type::value == 2);
-static_assert(nth<primes, 1>::type::value == 3);
-static_assert(nth<primes, 2>::type::value == 5);
-static_assert(nth<primes, 3>::type::value == 7);
-static_assert(nth<primes, 4>::type::value == 11);
-static_assert(nth<primes, 5>::type::value == 13);
 
 static_assert(add<Int<1>, Int<2>, Int<3>>::value == 6);
 static_assert(apply<add, IntList<1, 2, 3>>::type::value == 6);

@@ -55,21 +55,50 @@ using force = typename force_impl<T>::type;
 
 // data constructor
 
-struct nil { };
+template<typename... args>
+struct list { using type = list<args...>; };
+
+using nil = list<>;
 
 template<typename head, typename tail>
-struct cons {
-    using car = head;
-    using cdr = tail;
+struct cons_impl;
+
+template<typename head, typename tail>
+struct cons_impl {
+    using type = typename cons_impl<head, force<tail>>::type;
 };
+
+template<typename head, typename... args>
+struct cons_impl<head, list<args...>> {
+    using type = list<head, args...>;
+};
+
+template<typename head, typename tail>
+using cons = typename cons_impl<head, tail>::type;
 
 // data accessor
 
 template<typename lst>
-using car = force<typename force<lst>::car>;
+struct car_impl;
+
+template<typename head, typename... tail>
+struct car_impl<list<head, tail...>> {
+    using type = head;
+};
 
 template<typename lst>
-using cdr = force<typename force<lst>::cdr>;
+using car = force<typename car_impl<force<lst>>::type>;
+
+template<typename lst>
+struct cdr_impl;
+
+template<typename head, typename... tail>
+struct cdr_impl<list<head, tail...>> {
+    using type = list<tail...>;
+};
+
+template<typename lst>
+using cdr = force<typename cdr_impl<force<lst>>::type>;
 
 template<typename lst>
 using cadr = car<cdr<lst>>;
@@ -105,24 +134,12 @@ using intp = intp_impl<force<T>>;
 template<typename T>
 struct pairp_impl : std::false_type { };
 
-template<typename Head, typename Tail>
-struct pairp_impl<cons<Head, Tail>> : std::true_type { };
+template<typename Head, typename... Tail>
+struct pairp_impl<list<Head, Tail...>> : std::true_type { };
 
 template<typename T>
 using pairp = pairp_impl<force<T>>;
 
-// forward declaration (used by listp)
-meta_fn(cond, class... Args);
-
-meta_fn(listp, class T) {
-    using t = force<T>;
-    let_lazy(rest, listp<cdr<t>>);
-    meta_return (
-        cond<nilp<t>, std::true_type,
-             pairp<t>, rest,
-             std::false_type>);
-    has_value;
-};
 
 template<typename B>
 using not_ = bool_constant<!force<B>::value>;
@@ -147,17 +164,33 @@ meta_fn(if_, class Cond, class tb, class fb) {
     meta_return (if_impl<condition, tb, fb>);
 };
 
+template<typename ...arg>
+using if_impl_ = typename if_<arg...>::type;
+
 // cond<pred1, expr1, pred2, expr2, ..., default_expr>
-meta_fn(cond, class... Args);
+meta_fn(cond_, class... Args);
     template<class default_expr>
-    struct cond<default_expr> {
+    struct cond_<default_expr> {
         meta_return (default_expr);
     };
     template<class pred, class expr, class... rest>
-    struct cond<pred, expr, rest...> {
-        let_lazy(next, cond<rest...>);
-        meta_return (if_<pred, expr, next>);
+    struct cond_<pred, expr, rest...> {
+        let_lazy(next, cond_<rest...>);
+        meta_return (if_impl_<pred, expr, next>);
     };
+
+template<class... args>
+using cond = typename cond_<args...>::type;
+
+meta_fn(listp, class T) {
+    using t = force<T>;
+    let_lazy(rest, listp<cdr<t>>);
+    meta_return (
+        cond<nilp<t>, std::true_type,
+             pairp<t>, rest,
+             std::false_type>);
+    has_value;
+};
 
 // logical primitive (with short-circuit)
 
@@ -265,16 +298,6 @@ meta_fn(mod, class lhs, class rhs) {
 };
 
 // list primitives
-
-meta_fn(list , class... args);
-    template<class arg, class... args>
-    struct list<arg, args...> {
-        meta_return (cons<arg, list<args...>>);
-    };
-    template<>
-    struct list<> {
-        meta_return (nil);
-    };
 
 meta_fn(IntList, int... n) {
     meta_return (list<Int<n>...>);
