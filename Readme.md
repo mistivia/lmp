@@ -49,68 +49,7 @@ static_assert(apply<add,sum_list>::type::value == 36);
 ```
 
 
-### 2. Infinite List of Primes (Sieve of Eratosthenes)
-
-```cpp
-#include <lmp.h>
-
-using namespace lmp;
-    
-meta_fn(infinite_integers, int n) {
-    // `let_lazy(name, expr)` is similar to `(define name (delay expr))` in scheme
-    let_lazy(next, infinite_integers<n + 1>);
-    meta_return (cons<Int<n>, next>);
-};
-
-meta_fn(prime_sieve, class lst) {
-    static constexpr int n = car<lst>::value;
-
-    template<class T>
-    using not_divisible = not_<equal<mod<T, Int<n>>, Int<0>>>;
-    
-    let_lazy(tail, prime_sieve<filter<not_divisible, cdr<lst>>>);
-    meta_return (cons<Int<n>, tail>);
-};
-
-using primes = prime_sieve<infinite_integers<2>>;
-
-static_assert(nth<primes, 0>::type::value == 2);
-static_assert(nth<primes, 1>::type::value == 3);
-static_assert(nth<primes, 2>::type::value == 5);
-static_assert(nth<primes, 3>::type::value == 7);
-static_assert(nth<primes, 4>::type::value == 11);
-static_assert(nth<primes, 5>::type::value == 13);
-```
-
-This is similar to an infinite list of primes in Scheme:
-
-```scheme
-(define (infinite-integers n)
-   (define next (delay (infinite-integers (+ n 1))))
-   (cons n next))
-
-(define (prime-sieve lst)
-  (define n (car lst))
-  (define (not-divisible x) (not (= (modulo x n) 0)))
-  (define tail
-    (delay
-      (prime-sieve
-        (filter not-divisible(force (cdr lst))))))
-  (cons n tail))
-
-(define primes
-  (prime-sieve (infinite-integers 2)))
-```
-
-or in Haskell:
-
-```
-primes = filterPrime [2..] where
-  filterPrime (p:xs) =
-    p : filterPrime [x | x <- xs, x `mod` p /= 0]
-```
-
-### 3. A (toy) query DSL
+### 2. A (toy) query DSL
 
 ```cpp
 // exmaple of a query EDSL
@@ -182,7 +121,7 @@ int main() {
 // SELECT height FROM mytable;
 ```
 
-### 4. (C++17) Compile-time reflex
+### 3. (C++17) Compile-time reflex
 
 ```cpp
 #include <string>
