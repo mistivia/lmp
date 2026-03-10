@@ -3,16 +3,16 @@
 #include "lmp.h"
 
 template<typename... args>
-struct ReflexObjectImpl;
+struct ReflObjmpl;
 
 template<typename N, typename T, typename... args>
-struct ReflexObjectImpl<N, T, args...> : ReflexObjectImpl<args...> {
+struct ReflObjmpl<N, T, args...> : ReflObjmpl<args...> {
     T value;
     using name = N;
 };
 
 template<>
-struct ReflexObjectImpl<> {};
+struct ReflObjmpl<> {};
 
 #define DEFINE_LITERAL(_name_)  \
     namespace { \
@@ -21,31 +21,31 @@ struct ReflexObjectImpl<> {};
     } \
 
 template<typename N, typename T, typename ...args>
-T& getImpl(ReflexObjectImpl<args...> &obj) {
+T& getImpl(ReflObjmpl<args...> &obj) {
     using lst = lmp::list<args...>;
     static_assert(lmp::length<lst>::value >= 2);
     if constexpr (lmp::eq<lmp::car<lst>, N>::value) {
         return obj.value;
     } else {
-        using BaseType = typename lmp::apply<ReflexObjectImpl, lmp::cddr<lst>>::type;
+        using BaseType = typename lmp::apply<ReflObjmpl, lmp::cddr<lst>>::type;
         return getImpl<N, T>(static_cast<BaseType&>(obj));
     }
 }
 
 template<typename N, typename T, typename ...args>
-void setImpl(ReflexObjectImpl<args...> &obj, T&& new_value) {
+void setImpl(ReflObjmpl<args...> &obj, T&& new_value) {
     using lst = lmp::list<args...>;
     static_assert(lmp::length<lst>::value >= 2);
     if constexpr (lmp::eq<lmp::car<lst>, N>::value) {
         obj.value = std::forward<T&&>(new_value);
     } else {
-        using BaseType = typename lmp::apply<ReflexObjectImpl, lmp::cddr<lst>>::type;
+        using BaseType = typename lmp::apply<ReflObjmpl, lmp::cddr<lst>>::type;
         return setImpl<N, T>(static_cast<BaseType&>(obj), std::forward<T&&>(new_value));
     }
 }
 
 template<typename... args>
-void printImpl(ReflexObjectImpl<args...> &obj) {
+void printImpl(ReflObjmpl<args...> &obj) {
     using lst = typename lmp::list<args...>::type;
     if constexpr (lmp::length<lst>::value >= 2) {
         using N = typename lmp::nth<lst, 0>::type;
@@ -57,7 +57,7 @@ void printImpl(ReflexObjectImpl<args...> &obj) {
         } else if constexpr (lmp::eq<T, std::string>::value) {
             printf("%s: %s\n", lmp::list2string<N>::type::value, obj.value.c_str());
         }
-        using BaseType = typename lmp::apply<ReflexObjectImpl, lmp::cddr<lst>>::type;
+        using BaseType = typename lmp::apply<ReflObjmpl, lmp::cddr<lst>>::type;
         printImpl(static_cast<BaseType&>(obj));
     } else {
         return;
@@ -66,7 +66,7 @@ void printImpl(ReflexObjectImpl<args...> &obj) {
 
 template<typename... args>
 struct ReflexObject {
-    ReflexObjectImpl<args...> value;
+    ReflObjmpl<args...> value;
     template<typename N>
     using value_type = typename lmp::next_of<N, lmp::list<args...>>::type;
     template<typename N>
