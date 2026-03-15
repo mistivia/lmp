@@ -42,16 +42,16 @@ using force = typename force_impl<T>::type;
 
 // macros
 
-#define let_lazy(__name__, ...) \
+#define LET_LAZY(__name__, ...) \
     struct __name__ { \
         using type = ::lmp::force<__VA_ARGS__>; \
     };
 
-#define meta_fn(__name__, ...) template<__VA_ARGS__> struct __name__
+#define META_FN(__name__, ...) template<__VA_ARGS__> struct __name__
 
-#define meta_return(...) using type = ::lmp::force<__VA_ARGS__>
+#define META_RETURN(...) using type = ::lmp::force<__VA_ARGS__>
 
-#define has_value static constexpr auto value = type::value
+#define HAS_VALUE static constexpr auto value = type::value
 
 // data constructor
 
@@ -159,79 +159,79 @@ struct if_impl<std::false_type, tb, fb> {
   using type = force<fb>;
 };
 
-meta_fn(if_, class Cond, class tb, class fb) {
+META_FN(if_, class Cond, class tb, class fb) {
     using condition = force<Cond>;
-    meta_return (if_impl<condition, tb, fb>);
+    META_RETURN (if_impl<condition, tb, fb>);
 };
 
 template<typename ...arg>
 using if_impl_ = typename if_<arg...>::type;
 
 // cond<pred1, expr1, pred2, expr2, ..., default_expr>
-meta_fn(cond_, class... Args);
+META_FN(cond_, class... Args);
     template<class default_expr>
     struct cond_<default_expr> {
-        meta_return (default_expr);
+        META_RETURN (default_expr);
     };
     template<class pred, class expr, class... rest>
     struct cond_<pred, expr, rest...> {
-        let_lazy(next, cond_<rest...>);
-        meta_return (if_impl_<pred, expr, next>);
+        LET_LAZY(next, cond_<rest...>);
+        META_RETURN (if_impl_<pred, expr, next>);
     };
 
 template<class... args>
 using cond = typename cond_<args...>::type;
 
-meta_fn(listp, class T) {
+META_FN(listp, class T) {
     using t = force<T>;
-    let_lazy(rest, listp<cdr<t>>);
-    meta_return (
+    LET_LAZY(rest, listp<cdr<t>>);
+    META_RETURN (
         cond<nilp<t>, std::true_type,
              pairp<t>, rest,
              std::false_type>);
-    has_value;
+    HAS_VALUE;
 };
 
 // logical primitive (with short-circuit)
 
-meta_fn(and_, class... Bs);
+META_FN(and_, class... Bs);
     template<>
     struct and_<> {
-        meta_return (std::true_type);
-        has_value;
+        META_RETURN (std::true_type);
+        HAS_VALUE;
     };
     template<class B, class... Bs>
     struct and_<B, Bs...> {
-        let_lazy(rest, and_<Bs...>);
-        meta_return (if_<B, rest, std::false_type>);
-        has_value;
+        LET_LAZY(rest, and_<Bs...>);
+        META_RETURN (if_<B, rest, std::false_type>);
+        HAS_VALUE;
     };
 
-meta_fn(or_, class... Bs);
+META_FN(or_, class... Bs);
     template<>
     struct or_<> {
-        meta_return (std::false_type);
-        has_value;
+        META_RETURN (std::false_type);
+        HAS_VALUE;
     };
     template<class B, class... Bs>
     struct or_<B, Bs...> {
-        let_lazy(rest, or_<Bs...>);
-        meta_return (if_<B, std::true_type, rest>);
-        has_value;
+        LET_LAZY(rest, or_<Bs...>);
+        META_RETURN (if_<B, std::true_type, rest>);
+        HAS_VALUE;
     };
 
 
 // basic arithmetics
 
-meta_fn(equal, class L, class R) {
+META_FN(equal, class L, class R) {
     using l = force<L>;
     using r = force<R>;
-    let_lazy(pair_eq, and_<equal<car<l>, car<r>>, equal<cdr<l>, cdr<r>>>);
-    meta_return (
+    LET_LAZY(pair_eq, and_<equal<car<l>, car<r>>, equal<cdr<l>, cdr<r>>>);
+    META_RETURN (
         cond<and_<pairp<l>, pairp<r>>,
               pair_eq,
               eq<l, r>>);
-    has_value;
+    HAS_VALUE;
 };
 
 template<typename L, typename R>
@@ -246,211 +246,211 @@ using lt = bool_constant<(force<L>::value < force<R>::value)>;
 template<typename L, typename R>
 using le = bool_constant<(force<L>::value <= force<R>::value)>;
 
-meta_fn(add2, class lhs, class rhs) {
-    meta_return (Int<(force<lhs>::value + force<rhs>::value)>);
+META_FN(add2, class lhs, class rhs) {
+    META_RETURN (Int<(force<lhs>::value + force<rhs>::value)>);
 };
 
 template<typename T>
 using mandates = typename std::enable_if<T::value>::type;
 
-meta_fn(foldl, template<class, class> class fn, class init, class... args);
+META_FN(foldl, template<class, class> class fn, class init, class... args);
     template<template<class, class> class fn, class init>
     struct foldl<fn, init> {
-        meta_return (init);
+        META_RETURN (init);
     };
     template<template<class, class> class fn, class init, class arg, class... args>
     struct foldl<fn, init, arg, args...> {
-        meta_return (foldl<fn, fn<init, arg>, args...>);
+        META_RETURN (foldl<fn, fn<init, arg>, args...>);
     };
 
-meta_fn(add, class... args) {
-    meta_return (foldl<add2, Int<0>, args...>);
-    has_value;
+META_FN(add, class... args) {
+    META_RETURN (foldl<add2, Int<0>, args...>);
+    HAS_VALUE;
 };
 
-meta_fn(neg, class rhs) {
-    meta_return (Int<(- force<rhs>::value)>);
-    has_value;
+META_FN(neg, class rhs) {
+    META_RETURN (Int<(- force<rhs>::value)>);
+    HAS_VALUE;
 };
 
-meta_fn(sub, class lhs, class rhs) {
-    meta_return (Int<(force<lhs>::value - force<rhs>::value)>);
-    has_value;
+META_FN(sub, class lhs, class rhs) {
+    META_RETURN (Int<(force<lhs>::value - force<rhs>::value)>);
+    HAS_VALUE;
 };
 
-meta_fn(mul2, class lhs, class rhs) {
-    meta_return (Int<(force<lhs>::value * force<rhs>::value)>);
+META_FN(mul2, class lhs, class rhs) {
+    META_RETURN (Int<(force<lhs>::value * force<rhs>::value)>);
 };
 
-meta_fn(mul, class... args) {
-    meta_return (foldl<mul2, Int<1>, args...>);
-    has_value;
+META_FN(mul, class... args) {
+    META_RETURN (foldl<mul2, Int<1>, args...>);
+    HAS_VALUE;
 };
 
-meta_fn(div, class lhs, class rhs) {
-    meta_return (Int<(force<lhs>::value / force<rhs>::value)>);
-    has_value;
+META_FN(div, class lhs, class rhs) {
+    META_RETURN (Int<(force<lhs>::value / force<rhs>::value)>);
+    HAS_VALUE;
 };
 
-meta_fn(mod, class lhs, class rhs) {
-    meta_return (Int<(force<lhs>::value % force<rhs>::value)>);
-    has_value;
+META_FN(mod, class lhs, class rhs) {
+    META_RETURN (Int<(force<lhs>::value % force<rhs>::value)>);
+    HAS_VALUE;
 };
 
 // list primitives
 
-meta_fn(IntList, int... n) {
-    meta_return (list<Int<n>...>);
+META_FN(IntList, int... n) {
+    META_RETURN (list<Int<n>...>);
 };
 
-meta_fn(length, class Lst) {
+META_FN(length, class Lst) {
     using lst = force<Lst>;
-    let_lazy(cdr_length, length<cdr<lst>>);
-    meta_return (
+    LET_LAZY(cdr_length, length<cdr<lst>>);
+    META_RETURN (
         cond<nilp<lst>,
             Int<0>,
             add<Int<1>, cdr_length>>);
-    has_value;
+    HAS_VALUE;
 };
 
-meta_fn(nth, class Lst, int N) {
+META_FN(nth, class Lst, int N) {
     using lst = force<Lst>;
-    let_lazy(next, nth<cdr<lst>, N-1>);
-    meta_return (
+    LET_LAZY(next, nth<cdr<lst>, N-1>);
+    META_RETURN (
         cond<equal<Int<N>, Int<0>>,
             car<lst>,
             next>);
 };
 
-meta_fn(reverse_impl, class Lst, class Acc) {
+META_FN(reverse_impl, class Lst, class Acc) {
     using lst = force<Lst>;
     using acc = force<Acc>;
-    let_lazy(next, reverse_impl<cdr<lst>, cons<car<lst>, acc>>);
-    meta_return (
+    LET_LAZY(next, reverse_impl<cdr<lst>, cons<car<lst>, acc>>);
+    META_RETURN (
         cond<nilp<lst>,
             acc,
             next>);
 };
 
-meta_fn(reverse, class lst) {
-    meta_return (reverse_impl<lst, nil>);
+META_FN(reverse, class lst) {
+    META_RETURN (reverse_impl<lst, nil>);
 };
 
-meta_fn(concat_, class L1, class L2) {
+META_FN(concat_, class L1, class L2) {
     using rev1 = reverse<force<L1>>;
     using rev2 = reverse_impl<force<L2>, rev1>;
-    meta_return (reverse<rev2>);
+    META_RETURN (reverse<rev2>);
 };
 
-meta_fn(concat, class... args) {
-    meta_return (foldl<concat_, nil, args...>);
+META_FN(concat, class... args) {
+    META_RETURN (foldl<concat_, nil, args...>);
 };
 
-meta_fn(append, class Lst, class Elem) {
+META_FN(append, class Lst, class Elem) {
     using lst = force<Lst>;
     using elem = force<Elem>;
-    meta_return (
+    META_RETURN (
         reverse<cons<elem, reverse<lst>>>);
 };
 
-meta_fn(range, int start, int end) {
-    meta_fn(range_impl, int cur, class lst) {
-        meta_return (
+META_FN(range, int start, int end) {
+    META_FN(range_impl, int cur, class lst) {
+        META_RETURN (
             cond<lt<Int<cur>, Int<start>>,
                 lst,
                 range_impl<(cur-1), cons<Int<cur>, lst>>>);
     };
-    meta_return (
+    META_RETURN (
         cond<le<Int<(end-start)>, Int<0>>,
             nil,
             range_impl<(end-1), nil>>);
 };
 
-meta_fn(memberp, class Item, class Lst) {
+META_FN(memberp, class Item, class Lst) {
     using lst = force<Lst>;
     using item = force<Item>;
-    let_lazy(try_rest, memberp<item, cdr<lst>>);
-    let_lazy(check_list,
+    LET_LAZY(try_rest, memberp<item, cdr<lst>>);
+    LET_LAZY(check_list,
         cond<eq<item, car<lst>>,
             std::true_type,
             try_rest>);
-    meta_return (
+    META_RETURN (
         cond<nilp<lst>,
             std::false_type,
             check_list>);
-    has_value;
+    HAS_VALUE;
 };
 
-meta_fn(next_of, class T, class Lst) {
+META_FN(next_of, class T, class Lst) {
     using t = force<T>;
     using lst = force<Lst>;
-    let_lazy(try_rest, next_of<t, cdr<lst>>);
-    let_lazy(next_item, car<cdr<lst>>);
-    let_lazy(check_list,
+    LET_LAZY(try_rest, next_of<t, cdr<lst>>);
+    LET_LAZY(next_item, car<cdr<lst>>);
+    LET_LAZY(check_list,
         cond<and_<equal<t, car<lst>>, not_<nilp<cdr<lst>>>>,
             next_item,
             try_rest>);
-    meta_return (
+    META_RETURN (
         cond<nilp<lst>,
             nil,
             check_list>);
 };
 
-meta_fn(map, template<class> class fn, class Lst) {
+META_FN(map, template<class> class fn, class Lst) {
     using lst = force<Lst>;
-    let_lazy(new_lst, cons<fn<car<lst>>, map<fn, cdr<lst>>>);
-    meta_return (
+    LET_LAZY(new_lst, cons<fn<car<lst>>, map<fn, cdr<lst>>>);
+    META_RETURN (
         cond<nilp<lst>,
             nil,
             new_lst>);
 };
 
-meta_fn(filter, template<class> class pred, class Lst) {
+META_FN(filter, template<class> class pred, class Lst) {
     using lst = force<Lst>;
-    let_lazy(filtered_tail, filter<pred, cdr<lst>>);
-    let_lazy(new_lst,
+    LET_LAZY(filtered_tail, filter<pred, cdr<lst>>);
+    LET_LAZY(new_lst,
         cond<pred<car<lst>>,
             cons<car<lst>, filtered_tail>,
             filtered_tail>);
-    meta_return (
+    META_RETURN (
         cond<nilp<lst>,
             nil,
             new_lst>);
 };
 
-meta_fn(apply_impl, template<class... args> class fn, class lst, typename = void, class... applied);
+META_FN(apply_impl, template<class... args> class fn, class lst, typename = void, class... applied);
     template<
         template<class... args> class fn,
         class lst,
         class... applied>
     struct apply_impl<fn, lst, mandates<nilp<lst>>, applied...> {
-        meta_return (fn<applied...>);
+        META_RETURN (fn<applied...>);
     };
 
     template<template<class... args> class fn, class lst, class... applied>
     struct apply_impl<fn, lst, mandates<not_<nilp<lst>>>, applied...> {
-        meta_return (apply_impl<fn, cdr<lst>, void, applied..., car<lst>>);
+        META_RETURN (apply_impl<fn, cdr<lst>, void, applied..., car<lst>>);
     };
 
-meta_fn(apply, template<class... args> class fn, class lst) {
-    meta_return (apply_impl<fn, lst>);
+META_FN(apply, template<class... args> class fn, class lst) {
+    META_RETURN (apply_impl<fn, lst>);
 };
 
 // string utils
 
-meta_fn(char_at, const char* str, int n) {
-    meta_return (Int<(int)str[n]>);
+META_FN(char_at, const char* str, int n) {
+    META_RETURN (Int<(int)str[n]>);
 };
 
 constexpr int string_len(const char* s) {
     return *s ? 1 + string_len(s + 1) : 0;
 }
 
-meta_fn(string2list, const char *str) {
+META_FN(string2list, const char *str) {
     using idx_lst= range<0, string_len(str)>;
     template<class Elem>
     using at = char_at<str, force<Elem>::value>;
-    meta_return (map<at, idx_lst>);
+    META_RETURN (map<at, idx_lst>);
 };
 
 
@@ -459,10 +459,10 @@ struct string_constant {
     static constexpr char value[sizeof...(Cs) + 1] = { Cs..., '\0' };
 };
 
-meta_fn(list2string, class Lst, char... Cs) {
+META_FN(list2string, class Lst, char... Cs) {
     using lst = force<Lst>;
-    let_lazy(next, list2string<cdr<lst>, Cs..., (char)car<lst>::value>);
-    meta_return (
+    LET_LAZY(next, list2string<cdr<lst>, Cs..., (char)car<lst>::value>);
+    META_RETURN (
         cond<nilp<lst>,
             string_constant<Cs...>,
             next>);

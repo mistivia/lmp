@@ -226,8 +226,8 @@ constexpr char select_lit[] = "SELECT";
 constexpr char space_lit[] = " ";
 constexpr char semicolon_lit[] = ";";
 
-meta_fn(build_query, typename query) {
-    meta_return (list2string<concat<
+META_FN(build_query, typename query) {
+    META_RETURN (list2string<concat<
         string2list<select_lit>,
         string2list<space_lit>,
         string2list<query::field::name>,

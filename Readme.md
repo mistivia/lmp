@@ -82,8 +82,8 @@ constexpr char select_lit[] = "SELECT";
 constexpr char space_lit[] = " ";
 constexpr char semicolon_lit[] = ";";
 
-meta_fn(build_query, typename query) {
-    meta_return (list2string<concat<
+META_FN(build_query, typename query) {
+    META_RETURN (list2string<concat<
         string2list<select_lit>,
         string2list<space_lit>,
         string2list<query::field::name>,
@@ -242,12 +242,12 @@ concept Integer = intp<T>::value;
 And then we can type checking our meta functions:
 
 ```cpp
-meta_fn(myadd, Integer A, Integer B)
+META_FN(myadd, Integer A, Integer B)
 {
     using a = force<A>;
     using b = force<B>;
-    meta_return (add<a, b>);
-    has_value;
+    META_RETURN (add<a, b>);
+    HAS_VALUE;
 };
 
 // success
@@ -298,7 +298,7 @@ struct thunk_name {
 `thunk_name` itself is just a wrapper type. Only when you access `thunk_name::type` do you force evaluation of `EXPR::type`. LMP provides a macro to generate such wrappers quickly:
 
 ```cpp
-#define let_lazy(__name__, ...) \
+#define LET_LAZY(__name__, ...) \
     struct __name__ { \
         using type = ::lmp::force<__VA_ARGS__>; \
     };
@@ -307,8 +307,8 @@ struct thunk_name {
 Usage:
 
 ```cpp
-let_lazy(do_a_thunk, do_a<x>);
-let_lazy(do_b_thunk, do_b<x>);
+LET_LAZY(do_a_thunk, do_a<x>);
+LET_LAZY(do_b_thunk, do_b<x>);
 ```
 
 Now `do_a_thunk` / `do_b_thunk` are lazy expressions.
@@ -355,8 +355,8 @@ Conceptually, `if_<Cond, TB, FB>` does:
 So we define both branch as a thunk:
 
 ```cpp
-let_lazy(do_a_thunk, do_a<x>);
-let_lazy(do_b_thunk, do_b<x>);
+LET_LAZY(do_a_thunk, do_a<x>);
+LET_LAZY(do_b_thunk, do_b<x>);
 
 using result = lmp::force< lmp::if_<ok, do_a_thunk, do_b_thunk> >;
 ```
@@ -398,16 +398,16 @@ struct my_meta_func {
 To make this style uniform and lightweight, LMP uses two macros:
 
 ```cpp
-#define meta_fn(__name__, ...) template<__VA_ARGS__> struct __name__
-#define meta_return(...) using type = ::lmp::force<__VA_ARGS__>
+#define META_FN(__name__, ...) template<__VA_ARGS__> struct __name__
+#define META_RETURN(...) using type = ::lmp::force<__VA_ARGS__>
 ```
 
 So the same function becomes:
 
 ```cpp
-meta_fn(my_meta_func, class Arg) {
+META_FN(my_meta_func, class Arg) {
     using arg = lmp::force<Arg>;
-    meta_return(do_something<arg>);
+    META_RETURN(do_something<arg>);
 };
 ```
 
